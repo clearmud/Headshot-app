@@ -1,9 +1,5 @@
-
 import React from 'react';
-
-interface LoginScreenProps {
-    onLogin: () => void;
-}
+import { SignInButton } from '@clerk/clerk-react';
 
 const LinkedInIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -11,7 +7,7 @@ const LinkedInIcon: React.FC = () => (
     </svg>
 );
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
+export const LoginScreen: React.FC = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-2xl text-center">
@@ -29,17 +25,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 </div>
                 
                 <p className="text-sm text-gray-500">
-                    Sign in with your LinkedIn account to get started.
+                    Sign in to get started.
                 </p>
 
-                <button
-                    onClick={onLogin}
-                    className="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold text-white bg-linkedin-blue rounded-lg hover:bg-linkedin-hover focus:outline-none focus:ring-4 focus:ring-blue-300 transition-colors duration-300"
-                >
-                    <LinkedInIcon />
-                    Sign in with LinkedIn
-                </button>
-                <p className="text-xs text-gray-400 mt-4">This is a simulation. No actual LinkedIn data will be used.</p>
+                <SignInButton mode="modal">
+                    <button
+                        className="w-full flex items-center justify-center gap-3 py-3 px-4 text-lg font-semibold text-white bg-linkedin-blue rounded-lg hover:bg-linkedin-hover focus:outline-none focus:ring-4 focus:ring-blue-300 transition-colors duration-300"
+                    >
+                        <LinkedInIcon />
+                        Sign in or Sign up
+                    </button>
+                </SignInButton>
+                <p className="text-xs text-gray-400 mt-4">Secure sign-in powered by Clerk.</p>
             </div>
         </div>
     );

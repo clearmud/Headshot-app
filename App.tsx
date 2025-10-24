@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
 import { LoginScreen } from './components/LoginScreen';
 import { Header } from './components/Header';
 import { ImageUploader } from './components/ImageUploader';
@@ -13,8 +14,44 @@ import { FILTERS, BACKGROUNDS } from './constants';
 type AppView = 'generator' | 'pricing';
 
 const App: React.FC = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-    const [generationsLeft, setGenerationsLeft] = useState<number>(1);
+    return (
+        <>
+            <SignedOut>
+                <LoginScreen />
+            </SignedOut>
+            <SignedIn>
+                <GeneratorApp />
+            </SignedIn>
+        </>
+    );
+};
+
+const GeneratorApp: React.FC = () => {
+    const { user } = useUser();
+    // Generations are now managed by Clerk's metadata
+    const [generationsLeft, setGenerationsLeft] = useState<number>(0);
+    
+    useEffect(() => {
+        if (user) {
+            // Check if metadata is initialized
+            const credits = user.publicMetadata.generationsLeft as number | undefined;
+            if (typeof credits === 'number') {
+                setGenerationsLeft(credits);
+            } else {
+                // First time user, grant them 1 free credit
+                const initialCredits = 1;
+                setGenerationsLeft(initialCredits);
+                // FIX: Bypassing a TypeScript error with 'as any'. The 'publicMetadata' property
+                // is valid for user.update, but may be missing from the type definitions
+                // in the version of @clerk/clerk-react being used.
+                user.update({
+                    publicMetadata: { ...user.publicMetadata, generationsLeft: initialCredits }
+                } as any).catch(console.error);
+            }
+        }
+    }, [user]);
+
+
     const [userImage, setUserImage] = useState<string | null>(null);
     const [userImageMimeType, setUserImageMimeType] = useState<string | null>(null);
     
@@ -27,23 +64,6 @@ const App: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     
     const [currentView, setCurrentView] = useState<AppView>('generator');
-
-    const handleLogin = () => setIsLoggedIn(true);
-
-    const handleSignOut = () => {
-        setIsLoggedIn(false);
-        // Reset all state to default
-        setGenerationsLeft(1);
-        setUserImage(null);
-        setUserImageMimeType(null);
-        setSelectedFilter(null);
-        setSelectedBackground(BACKGROUNDS[0]);
-        setCustomBackgroundPrompt('');
-        setGeneratedImage(null);
-        setIsLoading(false);
-        setError(null);
-        setCurrentView('generator');
-    };
 
     const handleGoHome = () => setCurrentView('generator');
 
@@ -81,7 +101,13 @@ const App: React.FC = () => {
         try {
             const result = await generateHeadshot(userImage, userImageMimeType, finalPrompt);
             setGeneratedImage(`data:image/png;base64,${result}`);
-            setGenerationsLeft(prev => prev - 1);
+            // Decrement credits in Clerk metadata
+            const newCount = generationsLeft - 1;
+            setGenerationsLeft(newCount);
+            // FIX: Bypassing a TypeScript error with 'as any'. The 'publicMetadata' property
+            // is valid for user.update, but may be missing from the type definitions
+            // in the version of @clerk/clerk-react being used.
+            await user?.update({ publicMetadata: { ...user.publicMetadata, generationsLeft: newCount } } as any);
         } catch (e) {
             console.error(e);
             const message = e instanceof Error ? e.message : "Failed to generate headshot. Please try again.";
@@ -89,30 +115,16 @@ const App: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [userImage, userImageMimeType, generationsLeft, selectedFilter, selectedBackground, customBackgroundPrompt]);
-
-    const handlePurchase = (plan: 'pro' | 'business') => {
-        if (plan === 'pro') {
-            setGenerationsLeft(prev => prev + 50);
-        } else if (plan === 'business') {
-            setGenerationsLeft(prev => prev + 150);
-        }
-        setCurrentView('generator');
-    };
+    }, [user, userImage, userImageMimeType, generationsLeft, selectedFilter, selectedBackground, customBackgroundPrompt]);
     
-    if (!isLoggedIn) {
-        return <LoginScreen onLogin={handleLogin} />;
-    }
-
     const isCustomBackgroundValid = selectedBackground?.id !== 'custom' || (selectedBackground?.id === 'custom' && customBackgroundPrompt.trim() !== '');
     const canGenerate = userImage && selectedFilter && selectedBackground && isCustomBackgroundValid && !isLoading;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Header 
+                user={user}
                 generationsLeft={generationsLeft} 
-                onUpgrade={() => setCurrentView('pricing')}
-                onSignOut={handleSignOut}
                 onGoHome={handleGoHome}
             />
             {currentView === 'generator' ? (
@@ -194,12 +206,11 @@ const App: React.FC = () => {
                 </main>
             ) : (
                 <PricingScreen 
-                    onPurchase={handlePurchase}
                     onBack={() => setCurrentView('generator')}
                 />
             )}
         </div>
     );
-};
+}
 
 export default App;

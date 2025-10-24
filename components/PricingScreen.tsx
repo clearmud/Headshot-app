@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 interface PricingScreenProps {
-    onPurchase: (plan: 'pro' | 'business') => void;
     onBack: () => void;
 }
+
+// =======================================================================================
+// LIVE STRIPE PRICE IDs
+// These have been updated with the user's provided IDs.
+// =======================================================================================
+const STRIPE_PRICE_IDS = {
+    pro: 'price_1SLrg5Lei7aFvMIKCxIl8UUJ',
+    business: 'price_1SLrgKLei7aFvMIK2kRRaBw5',
+};
+// =======================================================================================
 
 const CheckIcon = () => (
     <svg className="w-5 h-5 text-linkedin-blue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -11,7 +21,47 @@ const CheckIcon = () => (
     </svg>
 );
 
-export const PricingScreen: React.FC<PricingScreenProps> = ({ onPurchase, onBack }) => {
+export const PricingScreen: React.FC<PricingScreenProps> = ({ onBack }) => {
+    const { getToken } = useAuth();
+    const [loadingPlan, setLoadingPlan] = useState<'pro' | 'business' | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const handlePurchase = async (plan: 'pro' | 'business') => {
+        setLoadingPlan(plan);
+        setError(null);
+        try {
+            const token = await getToken();
+            if (!token) {
+                throw new Error("Authentication token not found. Please sign in again.");
+            }
+            
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ priceId: STRIPE_PRICE_IDS[plan] }),
+            });
+
+            if (!response.ok) {
+                 const errorBody = await response.json();
+                throw new Error(errorBody.error || 'Failed to create checkout session.');
+            }
+
+            const { url } = await response.json();
+            if (url) {
+                window.location.href = url;
+            } else {
+                 throw new Error('Could not get redirection URL.');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+            setLoadingPlan(null);
+        }
+    };
+
+
     return (
         <main className="flex-grow container mx-auto p-4 md:p-8 animate-in fade-in duration-500">
              <div className="max-w-4xl mx-auto text-center">
@@ -31,7 +81,6 @@ export const PricingScreen: React.FC<PricingScreenProps> = ({ onPurchase, onBack
                     <ul className="mt-8 space-y-4 text-gray-600 flex-grow">
                         <li className="flex items-center gap-3"><CheckIcon /> 1 Free Credit</li>
                         <li className="flex items-center gap-3"><CheckIcon /> Standard Resolution</li>
-                        <li className="flex items-center gap-3"><CheckIcon /> Watermarked Images</li>
                     </ul>
                     <button disabled className="mt-8 w-full bg-gray-200 text-gray-500 font-bold py-3 rounded-lg cursor-not-allowed">
                         Your Current Plan
@@ -48,10 +97,9 @@ export const PricingScreen: React.FC<PricingScreenProps> = ({ onPurchase, onBack
                         <li className="flex items-center gap-3"><CheckIcon /> 50 Generations</li>
                         <li className="flex items-center gap-3"><CheckIcon /> High Resolution</li>
                         <li className="flex items-center gap-3"><CheckIcon /> No Watermark</li>
-                         <li className="flex items-center gap-3"><CheckIcon /> All Styles & Backgrounds</li>
                     </ul>
-                    <button onClick={() => onPurchase('pro')} className="mt-8 w-full bg-linkedin-blue hover:bg-linkedin-hover text-white font-bold py-3 rounded-lg transition-colors">
-                        Purchase Pro
+                    <button onClick={() => handlePurchase('pro')} disabled={loadingPlan !== null} className="mt-8 w-full bg-linkedin-blue hover:bg-linkedin-hover text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50">
+                        {loadingPlan === 'pro' ? 'Redirecting...' : 'Purchase Pro'}
                     </button>
                 </div>
 
@@ -64,15 +112,15 @@ export const PricingScreen: React.FC<PricingScreenProps> = ({ onPurchase, onBack
                         <li className="flex items-center gap-3"><CheckIcon /> 150 Generations</li>
                         <li className="flex items-center gap-3"><CheckIcon /> High Resolution</li>
                         <li className="flex items-center gap-3"><CheckIcon /> No Watermark</li>
-                        <li className="flex items-center gap-3"><CheckIcon /> Custom Backgrounds</li>
                         <li className="flex items-center gap-3"><CheckIcon /> Priority Support</li>
                     </ul>
-                    <button onClick={() => onPurchase('business')} className="mt-8 w-full bg-gray-800 hover:bg-black text-white font-bold py-3 rounded-lg transition-colors">
-                        Purchase Business
+                    <button onClick={() => handlePurchase('business')} disabled={loadingPlan !== null} className="mt-8 w-full bg-gray-800 hover:bg-black text-white font-bold py-3 rounded-lg transition-colors disabled:opacity-50">
+                         {loadingPlan === 'business' ? 'Redirecting...' : 'Purchase Business'}
                     </button>
                 </div>
             </div>
-             <p className="text-center text-xs text-gray-400 mt-8">This is a simulated Stripe checkout process.</p>
+            {error && <p className="text-center text-red-500 mt-4">{error}</p>}
+             <p className="text-center text-xs text-gray-400 mt-8">You will be redirected to Stripe for secure checkout.</p>
         </main>
     );
 };

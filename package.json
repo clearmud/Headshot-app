@@ -10,8 +10,15 @@
   },
   "dependencies": {
     "@google/genai": "^1.27.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@clerk/clerk-react": "5",
+    "stripe": "^19.1.0",
+    "@vercel/node": "^5.5.0",
+    "buffer": "^6.0.3",
+    "http": "^0.0.1-security",
+    "@clerk/types": "^4.95.1",
+    "@clerk/backend": "^2.19.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
