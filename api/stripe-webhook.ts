@@ -1,13 +1,13 @@
 // Use Vercel's provided Request and Response types
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Clerk } from '@clerk/backend';
+import { createClerkClient } from '@clerk/backend';
 import Stripe from 'stripe';
 // FIX: Explicitly import Buffer to fix "Cannot find name 'Buffer'" error.
 import { Buffer } from 'buffer';
 
-const clerk = Clerk({ secretKey: process.env.CLERK_SECRET_KEY! });
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20',
+    apiVersion: '2025-09-30.clover',
 });
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 

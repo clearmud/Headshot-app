@@ -1,11 +1,11 @@
 // Vercel's Request and Response types are compatible with the Node HTTP types
 import http from 'http';
-import { Clerk } from '@clerk/backend';
+import { createClerkClient } from '@clerk/backend';
 import Stripe from 'stripe';
 
-const clerk = Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
+const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-06-20',
+    apiVersion: '2025-09-30.clover',
 });
 
 // Helper to parse body
@@ -32,7 +32,7 @@ export default async function handler(req: http.IncomingMessage, res: http.Serve
 
     try {
         const token = authHeader.replace('Bearer ', '');
-        const claims = await clerk.verifyToken(token);
+        const claims = await clerk.tokens.verifyToken(token);
         const userId = claims.sub;
 
         if (!userId) {
