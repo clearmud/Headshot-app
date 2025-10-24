@@ -8,10 +8,10 @@ if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-const PUBLISHABLE_KEY = process.env.CLERK_PUBLISHABLE_KEY;
+const PUBLISHABLE_KEY = process.env.PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key");
+  throw new Error("Missing Publishable Key. Please set PUBLIC_CLERK_PUBLISHABLE_KEY in your environment variables.");
 }
 
 const root = ReactDOM.createRoot(rootElement);
