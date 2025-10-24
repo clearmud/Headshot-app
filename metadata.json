@@ -1,0 +1,5 @@
+{
+  "name": "LinkedIn Headshot AI",
+  "description": "Upload a photo and use AI-powered filters to generate a professional headshot for your LinkedIn profile. This app simulates a one-time free use, LinkedIn sign-on, and a Stripe payment flow for additional generations.",
+  "requestFramePermissions": []
+}
