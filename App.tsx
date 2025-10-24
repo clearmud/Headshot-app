@@ -7,7 +7,7 @@ import { FilterSelector } from './components/FilterSelector';
 import { BackgroundSelector } from './components/BackgroundSelector';
 import { ImageDisplay } from './components/ImageDisplay';
 import { PricingScreen } from './components/PricingScreen';
-import { generateHeadshot } from './services/geminiService';
+import { geminiService } from './services/geminiService';
 import { Filter, Background } from './types';
 import { FILTERS, BACKGROUNDS } from './constants';
 
@@ -99,7 +99,7 @@ const GeneratorApp: React.FC = () => {
         const finalPrompt = `${selectedFilter.prompt} The background is ${backgroundPrompt}. Maintain the subject's facial features from the original image.`;
 
         try {
-            const result = await generateHeadshot(userImage, userImageMimeType, finalPrompt);
+            const result = await geminiService.generateHeadshot(userImage, userImageMimeType, finalPrompt);
             setGeneratedImage(`data:image/png;base64,${result}`);
             // Decrement credits in Clerk metadata
             const newCount = generationsLeft - 1;
